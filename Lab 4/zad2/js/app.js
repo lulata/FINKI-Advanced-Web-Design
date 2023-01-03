@@ -31,31 +31,47 @@ const products = [
 
 // Your Code goes here
 
-const app = Vue.createApp({
-  data() {
+const store = Vuex.createStore({
+  state() {
     return {
       items: products,
       cartItems: [],
     };
   },
-  methods: {
-    addToCard(item) {
-      const flag = this.cartItems.some((cartItem) => cartItem.id === item.id);
+  mutations: {
+    addToCard(state, item) {
+      const flag = state.cartItems.some((cartItem) => cartItem.id === item.id);
       if (flag) {
-        this.cartItems.forEach((cartItem) => {
+        state.cartItems.forEach((cartItem) => {
           if (cartItem.id === item.id) {
             cartItem.qty += item.qty;
           }
         });
       } else {
-        this.cartItems.push(JSON.parse(JSON.stringify(item)));
+        state.cartItems.push(JSON.parse(JSON.stringify(item)));
       }
 
-      this.items.forEach((itemSearch) => {
+      state.items.forEach((itemSearch) => {
         if (itemSearch.id === item.id) {
           itemSearch.qty = 1;
         }
       });
+    },
+    removeItemFromCart(state, index) {
+      state.cartItems.splice(index, 1);
+    },
+  },
+});
+
+const app = Vue.createApp({
+  data() {
+    return {
+      store: store,
+    };
+  },
+  methods: {
+    addToCard(item) {
+      this.store.commit("addToCard", item);
     },
     formatCurrency(value) {
       return "$" + value.toFixed(2);
@@ -65,7 +81,11 @@ const app = Vue.createApp({
 
 app.component("shopping-cart", {
   props: ["items"],
-
+  data() {
+    return {
+      store: store,
+    };
+  },
   template: `<div>
   <table class="table table-cart">
                         <tr v-for="(item, index) in items">
@@ -91,7 +111,7 @@ app.component("shopping-cart", {
 					 </div>`,
   methods: {
     removeItem(index) {
-      this.items.splice(index, 1);
+      this.store.commit("removeItemFromCart", index);
     },
     formatCurrency(value) {
       return "$" + value.toFixed(2);
@@ -108,4 +128,5 @@ app.component("shopping-cart", {
   },
 });
 
+app.use(store);
 app.mount("#app");
